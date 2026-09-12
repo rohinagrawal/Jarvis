@@ -1,3 +1,8 @@
 .idea/
 .venv/
+.remember/
+.agents/workspace/*
+!.agents/workspace/README.md
+/.agents/.env.local
+
 *.iml
