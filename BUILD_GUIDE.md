@@ -10,10 +10,11 @@ Refer back to `LEARN.md` for concepts as you go. This doc is the "what to build 
 
 ## Ground rules
 
-1. **You write the code. Claude explains, reviews, and interrogates.** If you ask for the implementation outright, expect to get redirected back to figuring it out, with hints, not a solution.
-2. **Every phase ends with a self-check you answer in your own words**, either out loud to Claude or written into the Decisions Log below, before moving to the next phase. Skipping this is how you end up with a project you can run but can't defend.
-3. **If you're stuck more than ~30-45 minutes on the same bug**, ask, but say what you already tried first. "It's not working" gets you questions back, not an answer.
-4. **The Decisions Log and Failure Log at the bottom aren't optional busywork** — they're the actual raw material for your interview answers. An interviewer asking "why did you chunk at that size" wants the answer that's supposed to live in that table.
+1. **You write the code. Claude explains, reviews, and interrogates.** If you ask for the implementation outright, expect to get redirected back to figuring it out, with hints, not a solution. This applies to *project logic* — chunking strategy, retrieval design, agent flow, etc.
+2. **Exception: plain Python syntax and language mechanics get answered directly, in full.** You're new to Python specifically, not new to programming — so "how does a Python decorator work," "what's the difference between a list and a generator here," "why do I need `self`" get a straight, complete answer every time. That's not the part of this project you're supposed to be struggling to learn by discovery; the RAG/agent design decisions are.
+3. **Every phase ends with a self-check you answer in your own words**, either out loud to Claude or written into the Decisions Log below, before moving to the next phase. Skipping this is how you end up with a project you can run but can't defend.
+4. **If you're stuck more than ~30-45 minutes on the same bug**, ask, but say what you already tried first. "It's not working" gets you questions back, not an answer.
+5. **The Decisions Log and Failure Log at the bottom aren't optional busywork** — they're the actual raw material for your interview answers. An interviewer asking "why did you chunk at that size" wants the answer that's supposed to live in that table.
 
 ---
 
@@ -38,10 +39,24 @@ Each phase below builds on the last. Don't skip ahead — Phase 4's self-check a
 
 **Goal:** a working environment and one successful LLM call, nothing else yet.
 
-- [ ] Confirm your Python version works with the libraries you'll need. `pyproject.toml` currently pins `requires-python = ">=3.14"` — flag this: some ML-adjacent packages (chroma, sentence-transformers, etc.) lag behind on very new Python versions. If you hit install failures later, this is the first thing to suspect, not the last.
-- [ ] Add your core dependencies via `uv add` as you need them, phase by phase, rather than dumping everything in now. You'll actually notice what each one is for that way.
-- [ ] Decide which LLM API you're calling (Claude API, given the Anthropic context here, is the reasonable default) and get your key into `.env` — `python-dotenv` is already a dependency, so use it, don't hardcode the key anywhere.
+**Status as of 2026-09-12:** Python version fixed (see below), `.env` is gitignored, `anthropic` was added as a dependency speculatively before the provider decision below was settled — revisit whether that's still the right one once you pick a provider.
+
+- [x] Confirm your Python version works with the libraries you'll need. `pyproject.toml` originally pinned `requires-python = ">=3.14"`, which was too new for some ML-adjacent packages (chroma, sentence-transformers, etc.) — it's now `>=3.12`, and `.venv` is running 3.12.14. If you hit install failures later on a specific package, a Python-version mismatch is still the first thing to suspect.
+- [x] `.env` added to `.gitignore` (it wasn't there before — worth catching before a real key goes in it).
+- [ ] **Pick your LLM provider.** Claude API is *not* free — Claude Pro (your chat subscription) doesn't include API credits, and there's no student discount for it. Since you're doing this for learning, not production, a free/no-card option is the better call. Options researched, no credit card needed for any:
+  - **Google Gemini API** (via Google AI Studio) — recommended: current-gen Flash models, free, generous daily quota.
+  - **Groq** — free, very fast inference, good later for the agent loop (Phase 5) where latency matters.
+  - **OpenRouter** — free tier across 20+ models, capped at 50 req/day until you've spent $10 lifetime.
+  - **GitHub Models** — free via your existing GitHub PAT (you have GitHub Student Pack), zero extra signup, stingier rate limits.
+  - The provider genuinely doesn't matter for this phase's goal — pick one and move, don't over-deliberate it.
+- [ ] Add your core dependencies via `uv add` as you need them, phase by phase, rather than dumping everything in now. You'll actually notice what each one is for that way. (Swap or remove `anthropic` depending on what you picked above.)
+- [ ] Get your key into `.env` — `python-dotenv` is already a dependency, so use it, don't hardcode the key anywhere.
 - [ ] Write a throwaway script that loads the key from `.env` and makes one successful call, printing the response.
+
+**New to Python — a few things you'll hit in this phase, explained since this is language mechanics, not project logic:**
+- `python-dotenv`'s `load_dotenv()` reads your `.env` file and dumps its key-value pairs into `os.environ` (Python's equivalent of `System.getenv()` in Java) — you then read the key with `os.environ["ANTHROPIC_API_KEY"]` or `os.getenv("ANTHROPIC_API_KEY")`.
+- A "throwaway script" just means any `.py` file you run directly with `uv run python your_script.py` — no test framework, no `main.py` wiring needed yet.
+- If a package install fails with something like `ERROR: Could not find a version that satisfies the requirement`, that's very likely the Python-version mismatch mentioned above — ask if you hit this, it's a quick diagnosis.
 
 **Self-check before moving on:** if your key were exposed right now (committed to git, printed in a log), what would that cost you? Say the answer out loud. This isn't rhetorical — it's the instinct that should make "don't hardcode secrets" automatic rather than a rule you're following because someone told you to.
 
@@ -222,6 +237,6 @@ Every bug, weird behaviour, or "why is it doing that" moment goes here, with the
 
 ## How to actually use Claude on this project
 
-Good uses: asking why something works the way it does, asking Claude to review code you've already written and poke holes in it, asking Claude to play interviewer and push back on your explanation of a phase, getting unstuck on a specific error after you've said what you tried, sanity-checking whether a self-check answer is actually right.
+Good uses: asking why something works the way it does, asking Claude to review code you've already written and poke holes in it, asking Claude to play interviewer and push back on your explanation of a phase, getting unstuck on a specific error after you've said what you tried, sanity-checking whether a self-check answer is actually right, and — since Python itself is new to you — any plain syntax/language-mechanics question (decorators, generators, `async`/`await`, `self`, type hints, whatever). Those get answered directly and fully, no redirect.
 
-Not good uses: asking for the implementation outright. You'll get redirected back to this guide instead, on purpose — that redirect is the point of doing the project this way rather than being handed a finished repo.
+Not good uses: asking for the *project's* implementation outright — the RAG pipeline, chunking logic, agent graph, etc. You'll get redirected back to this guide instead, on purpose — that redirect is the point of doing the project this way rather than being handed a finished repo. The redirect is specifically about project logic, not about Python as a language.

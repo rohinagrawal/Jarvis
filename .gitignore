@@ -4,6 +4,7 @@
 .agents/workspace/*
 !.agents/workspace/README.md
 /.agents/.env.local
+.env
 
 *.iml
 
