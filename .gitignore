@@ -6,3 +6,7 @@
 /.agents/.env.local
 
 *.iml
+
+__pycache__/
+*egg-info/
+dist/
