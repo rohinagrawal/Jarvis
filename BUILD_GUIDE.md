@@ -39,19 +39,14 @@ Each phase below builds on the last. Don't skip ahead — Phase 4's self-check a
 
 **Goal:** a working environment and one successful LLM call, nothing else yet.
 
-**Status as of 2026-09-12:** Python version fixed (see below), `.env` is gitignored, `anthropic` was added as a dependency speculatively before the provider decision below was settled — revisit whether that's still the right one once you pick a provider.
+**Status as of 2026-09-13:** Done, pending your own self-check answer below. Went with Gemini. `openai` + GitHub Models was tried first, then dropped after discovering GitHub Models was fully retired July 30, 2026 (see Failure Log) — real dead-end, not a hypothetical one.
 
 - [x] Confirm your Python version works with the libraries you'll need. `pyproject.toml` originally pinned `requires-python = ">=3.14"`, which was too new for some ML-adjacent packages (chroma, sentence-transformers, etc.) — it's now `>=3.12`, and `.venv` is running 3.12.14. If you hit install failures later on a specific package, a Python-version mismatch is still the first thing to suspect.
-- [x] `.env` added to `.gitignore` (it wasn't there before — worth catching before a real key goes in it).
-- [ ] **Pick your LLM provider.** Claude API is *not* free — Claude Pro (your chat subscription) doesn't include API credits, and there's no student discount for it. Since you're doing this for learning, not production, a free/no-card option is the better call. Options researched, no credit card needed for any:
-  - **Google Gemini API** (via Google AI Studio) — recommended: current-gen Flash models, free, generous daily quota.
-  - **Groq** — free, very fast inference, good later for the agent loop (Phase 5) where latency matters.
-  - **OpenRouter** — free tier across 20+ models, capped at 50 req/day until you've spent $10 lifetime.
-  - **GitHub Models** — free via your existing GitHub PAT (you have GitHub Student Pack), zero extra signup, stingier rate limits.
-  - The provider genuinely doesn't matter for this phase's goal — pick one and move, don't over-deliberate it.
-- [ ] Add your core dependencies via `uv add` as you need them, phase by phase, rather than dumping everything in now. You'll actually notice what each one is for that way. (Swap or remove `anthropic` depending on what you picked above.)
-- [ ] Get your key into `.env` — `python-dotenv` is already a dependency, so use it, don't hardcode the key anywhere.
-- [ ] Write a throwaway script that loads the key from `.env` and makes one successful call, printing the response.
+- [x] `.env` added to `.gitignore` (it wasn't there before — worth catching before a real key goes in it). Since narrowed to `*.env` to also catch variants like `dev.env`.
+- [x] **Pick your LLM provider** — went with **Google Gemini API** (`google-genai`, model `gemini-3.6-flash`). `openai` package + GitHub Models endpoint was the first attempt; removed after the 410 retirement error (Failure Log entry below) — decide whether the leftover `github()` function in `main.py` stays as a documented dead-end or gets deleted.
+- [x] Core dependencies added via `uv add` as needed: `google-genai`, `openai` (now unused, see above), `python-dotenv`.
+- [x] Key loaded via `.env` (named `dev.env` locally, loaded explicitly with `load_dotenv("dev.env")`), read with `os.environ["GEMINI_API_KEY"]`, never hardcoded.
+- [x] Throwaway script written (`main.py`'s `gemini()` function) — confirmed working: ran it, got a real response back from the model.
 
 **New to Python — a few things you'll hit in this phase, explained since this is language mechanics, not project logic:**
 - `python-dotenv`'s `load_dotenv()` reads your `.env` file and dumps its key-value pairs into `os.environ` (Python's equivalent of `System.getenv()` in Java) — you then read the key with `os.environ["ANTHROPIC_API_KEY"]` or `os.getenv("ANTHROPIC_API_KEY")`.
@@ -223,7 +218,7 @@ Every bug, weird behaviour, or "why is it doing that" moment goes here, with the
 
 ## Progress Checklist
 
-- [ ] Phase 0 — Setup
+- [ ] Phase 0 — Setup (all tasks done, just needs your self-check answer to actually close it out)
 - [ ] Phase 1 — Chunking
 - [ ] Phase 2 — Embeddings + Vector Store
 - [ ] Phase 3 — Hybrid Search + Reranking
