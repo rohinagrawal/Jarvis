@@ -217,6 +217,7 @@ Every bug, weird behaviour, or "why is it doing that" moment goes here, with the
 
 | What broke | Root cause | Fix | What it taught you |
 |---|---|---|---|
+| GitHub Models API call returned a 410 error | GitHub Models was fully retired July 30, 2026 — the docs/tutorial I followed hadn't caught up | Removed the `github()` function, switched entirely to Gemini | ... |
 
 ---
 

@@ -3,5 +3,7 @@ name = "jarvis"
 version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = [
+    "google-genai>=2.23.0",
+    "openai>=3.13.0",
     "python-dotenv>=1.2.3",
 ]
