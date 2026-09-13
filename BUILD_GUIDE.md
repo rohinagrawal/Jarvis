@@ -39,7 +39,7 @@ Each phase below builds on the last. Don't skip ahead — Phase 4's self-check a
 
 **Goal:** a working environment and one successful LLM call, nothing else yet.
 
-**Status as of 2026-09-13:** Done, pending your own self-check answer below. Went with Gemini. `openai` + GitHub Models was tried first, then dropped after discovering GitHub Models was fully retired July 30, 2026 (see Failure Log) — real dead-end, not a hypothetical one.
+**Status:** Complete, self-check answered. Went with Gemini. `openai` + GitHub Models was tried first, then dropped after discovering GitHub Models was fully retired July 30, 2026 (see Failure Log) — real dead-end, not a hypothetical one.
 
 - [x] Confirm your Python version works with the libraries you'll need. `pyproject.toml` originally pinned `requires-python = ">=3.14"`, which was too new for some ML-adjacent packages (chroma, sentence-transformers, etc.) — it's now `>=3.12`, and `.venv` is running 3.12.14. If you hit install failures later on a specific package, a Python-version mismatch is still the first thing to suspect.
 - [x] `.env` added to `.gitignore` (it wasn't there before — worth catching before a real key goes in it). Since narrowed to `*.env` to also catch variants like `dev.env`.
@@ -204,7 +204,7 @@ Fill this in as you go, not retroactively at the end. One row per real decision.
 
 | Phase | Decision | Why | Trade-off you considered and rejected |
 |---|---|---|---|
-| | | | |
+| 0 | Used Google Gemini API (`google-genai`) as the LLM provider | GitHub Models was the first choice (free via existing GitHub Student Pack PAT, zero extra signup), but it turned out to be fully retired (July 30, 2026) before it could be used. Gemini was the next-best option: free tier with looser quota restrictions than the other free alternatives. | Considered Groq and OpenRouter but didn't seriously evaluate either — current need (one working call, Phase 0's whole scope) was already covered by Gemini's free tier. Decision was deliberately deferred: Groq/OpenRouter stay on the table specifically for when multi-model orchestration becomes a real requirement (later phases), not decided against on technical merit now. |
 
 ## Failure Log
 
@@ -212,13 +212,13 @@ Every bug, weird behaviour, or "why is it doing that" moment goes here, with the
 
 | What broke | Root cause | Fix | What it taught you |
 |---|---|---|---|
-| GitHub Models API call returned a 410 error | GitHub Models was fully retired July 30, 2026 — the docs/tutorial I followed hadn't caught up | Removed the `github()` function, switched entirely to Gemini | ... |
+| GitHub Models API call returned a 410 error (`github_models_retirement_brownout`) | GitHub Models was fully retired July 30, 2026. It was recommended (by Claude, in this project's own chat) as a free option without first checking whether it was still active — the recommendation was based on stale/general knowledge, not a live check. | Kept `github()` in `Jarvis/script.py` as a documented dead-end (comment explains why it no longer works), switched the working path entirely to Gemini. | Don't trust an AI-suggested tool/provider/library at face value — verify it's actually still active/current before integrating, especially for anything that moves fast (free-tier APIs, SDKs, deprecating platforms). This was chosen specifically because GitHub Models seemed like the lowest-friction option (already had a GitHub PAT via Student Pack, repo already on GitHub) — the appeal of "less setup" is exactly when it's easiest to skip verifying the thing still exists. |
 
 ---
 
 ## Progress Checklist
 
-- [ ] Phase 0 — Setup (all tasks done, just needs your self-check answer to actually close it out)
+- [x] Phase 0 — Setup
 - [ ] Phase 1 — Chunking
 - [ ] Phase 2 — Embeddings + Vector Store
 - [ ] Phase 3 — Hybrid Search + Reranking
