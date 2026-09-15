@@ -1,4 +1,4 @@
-from Jarvis.script import gemini
+from Jarvis import gemini
 
 
 def main() -> None:

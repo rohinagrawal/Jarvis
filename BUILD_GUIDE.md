@@ -65,9 +65,22 @@ Each phase below builds on the last. Don't skip ahead — Phase 4's self-check a
 
 **Goal:** a deliberately chunked version of your corpus, and enough manual inspection to trust it.
 
-- [ ] Split `LEARN.md` (or your chosen corpus) by something structurally meaningful first — its own headers are a gift here, use them — before deciding whether you also need a token-count-based split within sections.
-- [ ] Pick one chunking strategy on purpose. Not "whatever the library defaults to."
+**Corpus decision:** `LEARN.md`. A GraphRAG extension using college project reports (entities/relationships: project → technologies → teammates) was discussed as a possible future phase — deliberately deferred, not scoped in yet.
+
+**Chunking strategy — fully specified, ready to implement:**
+1. **Primary split**: on `##` headers (not `#` — too coarse; not `###` — too granular and inconsistent).
+2. **Fallback split**: within an oversized `##` section, split by paragraph.
+3. **Token limit**: caps every chunk at both levels. Anything still oversized after structural splitting (including a single paragraph that alone exceeds the limit) gets hard-cut at the token limit — no special case, same mechanism reused recursively.
+4. **Overlap**: applied only at token-limit cuts, never at header boundaries — header boundaries are deliberate/semantic (the author already decided "new topic here"), so overlap there would just duplicate content with no benefit. Token-limit cuts are arbitrary (land wherever the count hits), which is exactly where context can be split mid-thought.
+5. **Merge**: a small chunk merges into the earlier chunk only if (a) that earlier chunk is from the *same* `##` section, and (b) the small chunk resulted from a token-limit cut, not a header split. No same-section earlier chunk to merge with → stays standalone.
+6. **Header-splits stand as-is, always** — never merged, never touched, regardless of how small they end up (e.g. a short subsection with just a couple of bullets stays its own chunk). Deliberately accepted trade-off: occasionally thin/context-poor chunks, in exchange for a single consistent rule with no cross-topic-boundary exceptions.
+7. **Oversized paragraph** (rare edge case): not special-cased — falls through to rule 3 (hard-cut) and rule 4 (overlap) like any other token-limit overflow.
+
+This is recursive/hierarchical chunking (headers → paragraphs → hard token cutoff), same concept as LangChain's `RecursiveCharacterTextSplitter`, derived independently before reading `LEARN.md` 2.1's coverage of it.
+
+- [ ] Implement the strategy above.
 - [ ] Print out a handful of actual chunks and read them. Would a chunk on its own, with no surrounding context, make sense to someone who didn't already know the document?
+- [ ] Decide the actual token limit number empirically — no need to research an "optimal" value, pick something reasonable (300-500 tokens is a common starting range for prose), run it, look at real output, adjust.
 
 **Self-check:**
 - Why this chunk size and overlap, specifically? "Seemed reasonable" isn't an answer that survives a follow-up question.
@@ -205,6 +218,8 @@ Fill this in as you go, not retroactively at the end. One row per real decision.
 | Phase | Decision | Why | Trade-off you considered and rejected |
 |---|---|---|---|
 | 0 | Used Google Gemini API (`google-genai`) as the LLM provider | GitHub Models was the first choice (free via existing GitHub Student Pack PAT, zero extra signup), but it turned out to be fully retired (July 30, 2026) before it could be used. Gemini was the next-best option: free tier with looser quota restrictions than the other free alternatives. | Considered Groq and OpenRouter but didn't seriously evaluate either — current need (one working call, Phase 0's whole scope) was already covered by Gemini's free tier. Decision was deliberately deferred: Groq/OpenRouter stay on the table specifically for when multi-model orchestration becomes a real requirement (later phases), not decided against on technical merit now. |
+| 1 | Chunking strategy: recursive/hierarchical — split on `##` headers, fall back to paragraph split within oversized sections, hard-cut at a token limit as the final fallback | `LEARN.md` has strong structural signal (real Markdown headers) to split on, so rule-based/deterministic chunking was a clear fit — an LLM-based semantic chunker would be solving a problem this corpus doesn't have (no structural signal to substitute for). Considered chunking on paragraph breaks alone first, rejected because related content under one header was getting scattered across unrelated chunks. | Considered LLM-based/semantic chunking (using an LLM or embedding similarity to find topic boundaries) — rejected as unnecessary complexity, cost, and non-determinism for a document that already has clean structural markers; noted as the right tool for corpora that lack that structure (unformatted prose, transcripts). |
+| 1 | Overlap only at token-limit cuts; merge only for token-limit-cut fragments within the same header section; header-splits never merged regardless of size | Header boundaries are deliberate semantic boundaries (the author decided "new topic here") — overlap/merge there would either duplicate content for no benefit or mix unrelated topics into one chunk. Token-limit cuts are arbitrary (land wherever the count hits) and are the only place context genuinely needs patching. | Considered merging small header-split sections into an adjacent (different-topic) section for size consistency — rejected because it violates the same-topic-per-chunk principle; accepted the trade-off of occasional thin/context-poor small chunks instead, in exchange for one consistent rule with no cross-topic exceptions. |
 
 ## Failure Log
 

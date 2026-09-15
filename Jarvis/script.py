@@ -1,5 +1,7 @@
 import os
+from pathlib import Path
 
+from docx import Document
 from dotenv import load_dotenv
 from google import genai
 from openai import OpenAI
@@ -26,3 +28,22 @@ def github():
         messages=[{"role": "user", "content": "Say hi in one word."}],
     )
     print(response.choices[0].message.content)
+
+def docx_reader(path):
+    document = Document(path)
+    print(document)
+
+    print("=== PARAGRAPHS ===")
+    for i, para in enumerate(document.paragraphs):
+        print(i, repr(para.text))
+
+    print("=== TABLES ===")
+    for t, table in enumerate(document.tables):
+        print(f"--- table {t} ---")
+        for row in table.rows:
+            cells = [cell.text for cell in row.cells]
+            print(cells)
+
+if __name__ == "__main__":
+    docx_reader(Path(__file__).resolve().parent.parent / ".agents/workspace/Rohin_Agrawal_Resume.docx")
+    docx_reader(Path(__file__).resolve().parent.parent / ".agents/workspace/Biodata.docx")
