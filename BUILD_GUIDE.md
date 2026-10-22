@@ -78,9 +78,11 @@ Each phase below builds on the last. Don't skip ahead — Phase 4's self-check a
 
 This is recursive/hierarchical chunking (headers → paragraphs → hard token cutoff), same concept as LangChain's `RecursiveCharacterTextSplitter`, derived independently before reading `LEARN.md` 2.1's coverage of it.
 
-- [ ] Implement the strategy above.
-- [ ] Print out a handful of actual chunks and read them. Would a chunk on its own, with no surrounding context, make sense to someone who didn't already know the document?
-- [ ] Decide the actual token limit number empirically — no need to research an "optimal" value, pick something reasonable (300-500 tokens is a common starting range for prose), run it, look at real output, adjust.
+**Status:** Implementation done (`Jarvis/Chunking/tasks.py`, constants in `constants.py`); self-check not yet answered. On `LEARN.md` it yields 69 chunks, max 319 words. Token counting is a crude word count (`count_token_approx` in `utils.py`), deliberately swappable later for a real tokenizer.
+
+- [x] Implement the strategy above. Each chunk is a `Chunk_MD(text, section, from_token_cut)`; `section` is the real `##` heading, carried onto every chunk cut from that section.
+- [ ] Print out a handful of actual chunks and read them. Would a chunk on its own, with no surrounding context, make sense to someone who didn't already know the document? (`main.py` prints a per-chunk summary; actually reading chunk text, e.g. the 21-word chunk in 5.3 and the hard-cut chunk in 4.1, is still to do.)
+- [x] Decide the actual token limit number empirically — started at 400/100 (51 chunks, hard-cut path never triggered on `LEARN.md`), moved to `TOKEN_LIMIT = 300`, `OVERLAP_TOKEN = 100` (69 chunks, hard-cut triggers once, in 4.1). `FLOOR_TOKEN_LIMIT = 20` is the tail-merge threshold.
 
 **Self-check:**
 - Why this chunk size and overlap, specifically? "Seemed reasonable" isn't an answer that survives a follow-up question.
@@ -220,6 +222,10 @@ Fill this in as you go, not retroactively at the end. One row per real decision.
 | 0 | Used Google Gemini API (`google-genai`) as the LLM provider | GitHub Models was the first choice (free via existing GitHub Student Pack PAT, zero extra signup), but it turned out to be fully retired (July 30, 2026) before it could be used. Gemini was the next-best option: free tier with looser quota restrictions than the other free alternatives. | Considered Groq and OpenRouter but didn't seriously evaluate either — current need (one working call, Phase 0's whole scope) was already covered by Gemini's free tier. Decision was deliberately deferred: Groq/OpenRouter stay on the table specifically for when multi-model orchestration becomes a real requirement (later phases), not decided against on technical merit now. |
 | 1 | Chunking strategy: recursive/hierarchical — split on `##` headers, fall back to paragraph split within oversized sections, hard-cut at a token limit as the final fallback | `LEARN.md` has strong structural signal (real Markdown headers) to split on, so rule-based/deterministic chunking was a clear fit — an LLM-based semantic chunker would be solving a problem this corpus doesn't have (no structural signal to substitute for). Considered chunking on paragraph breaks alone first, rejected because related content under one header was getting scattered across unrelated chunks. | Considered LLM-based/semantic chunking (using an LLM or embedding similarity to find topic boundaries) — rejected as unnecessary complexity, cost, and non-determinism for a document that already has clean structural markers; noted as the right tool for corpora that lack that structure (unformatted prose, transcripts). |
 | 1 | Overlap only at token-limit cuts; merge only for token-limit-cut fragments within the same header section; header-splits never merged regardless of size | Header boundaries are deliberate semantic boundaries (the author decided "new topic here") — overlap/merge there would either duplicate content for no benefit or mix unrelated topics into one chunk. Token-limit cuts are arbitrary (land wherever the count hits) and are the only place context genuinely needs patching. | Considered merging small header-split sections into an adjacent (different-topic) section for size consistency — rejected because it violates the same-topic-per-chunk principle; accepted the trade-off of occasional thin/context-poor small chunks instead, in exchange for one consistent rule with no cross-topic exceptions. |
+| 1 | Chunk `section` field holds the real `## heading` for every chunk, including paragraph-packed and hard-cut ones; heading is not prepended to later sub-chunks' text | Rule 5 (merge only within the same section) and later citations need to know a chunk's section; the heading is already at the top of the section's first chunk, so metadata covers the rest. | Prepending the heading to every sub-chunk gives embeddings topic context but costs tokens and duplicates text. Deferred to Phase 2, when embedding-time behaviour can be observed. |
+| 1 | Hard-cut tail merge: if the last window of an oversized paragraph has ≤ 20 new words (`FLOOR_TOKEN_LIMIT`), append only those new words to the previous chunk instead of making a new one | A tail made of 100 overlap words plus a handful of new ones is a near-duplicate fragment. | Accepted trade-off: a merged chunk can reach `TOKEN_LIMIT + 20` (319), breaking the strict cap. Alternative was a strict cap with occasional near-duplicate fragments. |
+| 1 | Hard-cut windows stop as soon as one reaches the end of the text | Looping over every start position produced a final window fully contained in the previous one. | None considered. |
+| 1 | `TOKEN_LIMIT` 300 / `OVERLAP_TOKEN` 100 (from 400 / 100) | At 400 the hard-cut path never ran on `LEARN.md`; at 300 it ran once. **Fill in your own reasoning for choosing 300 here.** | — |
 
 ## Failure Log
 
@@ -228,13 +234,14 @@ Every bug, weird behaviour, or "why is it doing that" moment goes here, with the
 | What broke | Root cause | Fix | What it taught you |
 |---|---|---|---|
 | GitHub Models API call returned a 410 error (`github_models_retirement_brownout`) | GitHub Models was fully retired July 30, 2026. It was recommended (by Claude, in this project's own chat) as a free option without first checking whether it was still active — the recommendation was based on stale/general knowledge, not a live check. | Kept `github()` in `Jarvis/script.py` as a documented dead-end (comment explains why it no longer works), switched the working path entirely to Gemini. | Don't trust an AI-suggested tool/provider/library at face value — verify it's actually still active/current before integrating, especially for anything that moves fast (free-tier APIs, SDKs, deprecating platforms). This was chosen specifically because GitHub Models seemed like the lowest-friction option (already had a GitHub PAT via Student Pack, repo already on GitHub) — the appeal of "less setup" is exactly when it's easiest to skip verifying the thing still exists. |
+| Tail merge in hard-cut copied the whole last window into the previous chunk (chunk grew to 419 words, over the 300 limit) | The last window repeats the previous chunk's final `OVERLAP_TOKEN` words, and the merge appended all of them as well as the new words. | Append only `piece[OVERLAP_TOKEN:]`. | Synthetic test inputs (350–1000 words) all missed the merge case; only real data exposed it. Test boundary cases (319/320/321 words) on purpose. |
 
 ---
 
 ## Progress Checklist
 
 - [x] Phase 0 — Setup
-- [ ] Phase 1 — Chunking
+- [ ] Phase 1 — Chunking *(implemented; read-the-chunks step and self-check pending)*
 - [ ] Phase 2 — Embeddings + Vector Store
 - [ ] Phase 3 — Hybrid Search + Reranking
 - [ ] Phase 4 — Basic RAG Loop
