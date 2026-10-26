@@ -28,5 +28,11 @@ def file_reader(path):
     return content
 
 def count_token_approx(text:str) -> int:
-    # Count the no of words in a text to find approximate tokens
+    """
+    Count the no of words in a text to find approximate tokens
+
+    Word counts are not token counts
+    :param text:
+    :return:
+    """
     return len(text.split())

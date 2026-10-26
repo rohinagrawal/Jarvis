@@ -34,7 +34,7 @@ The goal is not just a working assistant, but one where every design choice (chu
 | Phase | Component | Status |
 |---|---|---|
 | 0 | Setup: environment, LLM provider (Gemini), first API call | ✅ Done |
-| 1 | Corpus & hierarchical chunking | 🚧 In progress |
+| 1 | Corpus & hierarchical chunking | ✅ Done |
 | 2 | Embeddings + vector store | ⏳ Planned |
 | 3 | Hybrid search (BM25 + dense) + reranking | ⏳ Planned |
 | 4 | Basic RAG loop | ⏳ Planned |
@@ -49,7 +49,7 @@ The goal is not just a working assistant, but one where every design choice (chu
 Every non-trivial decision is recorded with its reasoning and the alternatives rejected, and every failure with its root cause, in the **Decisions Log** and **Failure Log** in [BUILD_GUIDE.md](BUILD_GUIDE.md).
 
 Highlights so far:
-- **Chunking:** recursive/hierarchical split on `##` headers, then paragraphs, then a hard token-limit cut. Overlap is applied only at token-limit cuts, since header boundaries are already deliberate topic boundaries.
+- **Chunking:** recursive/hierarchical split on `##` headers, then paragraphs, then a hard word-limit cut (300 words, 100-word overlap at hard cuts only, since header boundaries are already deliberate topic boundaries). Each chunk carries its `##` heading so it makes sense on its own. `###` subheadings are deliberately not boundaries, which is a known trade-off.
 - **LLM provider:** Google Gemini, after GitHub Models (the first choice) turned out to be retired mid-build.
 
 ## Tech stack
@@ -81,8 +81,9 @@ Highlights so far:
 
 | Path | Purpose |
 |---|---|
-| `Jarvis/` | Project source |
-| `main.py` | Entry point |
+| `Jarvis/Chunking/` | Phase 1: Markdown chunker (`tasks.py`), limits (`constants.py`), helpers (`utils.py`) |
+| `Jarvis/LLM/` | LLM provider calls (Gemini; a retired GitHub Models call kept as a documented dead-end) |
+| `main.py` | Entry point (currently chunks `LEARN.md` and prints a per-chunk summary) |
 | `BUILD_GUIDE.md` | Phase-by-phase build plan, Decisions Log and Failure Log |
 | `LEARN.md` | GenAI concept notes; also the corpus Jarvis retrieves over |
 
